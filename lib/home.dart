@@ -14,6 +14,7 @@ class HomeState extends State<Home>
 {
   late List<user> users = [];
   bool isLoaded = false;
+  bool _isPressed = false;
   int _counter = 0;
 
   List<user> items = 
@@ -64,13 +65,6 @@ class HomeState extends State<Home>
     if(index == 2){ Navigator.pushNamed(context, '/second'); }
   }
 
-  Future<void> addElement() async 
-  {
-    debugPrint("addElement +");    
-    //Navigator.pop(context);
-    //Navigator.pushNamed(context, '/add'); 
-  }  
-
   Future<void> onPressed() async 
   {
     debugPrint("onPressed");    
@@ -82,6 +76,12 @@ class HomeState extends State<Home>
     debugPrint("onCheked | label: ${items[index].name} - index: $index - status $status ");    
     items[index].isChecked = status!;
   }    
+
+  Future<void> addElement() async 
+  {
+    debugPrint("addElement");    
+
+  }  
 
   @override
   Widget build(BuildContext context) 
@@ -100,19 +100,19 @@ class HomeState extends State<Home>
       body: //Center(child: Text("¡ Hello World !")),
             //getColumns(context),
             //getRows(context),            
-            //child: generateTable(4,3),            
+            //child: generateTable(4,3),  
 
             //getButtons(context),
             //getCombos(),
             //getListTitles(),
             
-            //getUsers(),             // *rest api user from internet            
-            getForm(),                // -add user to list and refresh GUI            
-                                      // -add test.dart scene for test menu for: UNITS TEST
-                                      // -conect to firebase
-                                      // -upload proyect to GIT
-
-
+            //getUsers(),             // * rest api user from internet  
+            //getAnimations(),        // * animations  
+            getForm(),                // - conect to firebase: add, update & delete user
+                                      // * add user to list and refresh GUI            
+                                      // * add test.dart scene for test menu for: UNITS TEST                                      
+                                      // * upload proyect to GIT
+                                     
       floatingActionButton: FloatingActionButton(
         onPressed: addElement,
         backgroundColor: Colors.indigo,        
@@ -122,6 +122,20 @@ class HomeState extends State<Home>
       bottomNavigationBar: barMenu(context) 
     );     
   }
+  
+  Widget getForm()
+  {
+    return Column
+    ( 
+      children: <Widget>
+      [
+        TextField( decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'Username', hintText: 'username', prefixIcon: Icon(Icons.person),),),        
+        TextField( decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'email', hintText: 'email', prefixIcon: Icon(Icons.email),),),        
+        const Divider(height: 20, thickness: 1, indent: 10, endIndent: 10, color: Colors.indigo),        
+        ElevatedButton(onPressed: addElement, child: const Text('Enviar')),
+      ]                                         
+    );
+  }  
 
   Widget getUsers()
   {
@@ -139,20 +153,39 @@ class HomeState extends State<Home>
       },    
     )
     : const Center(child: CircularProgressIndicator());
-
   }
 
-  Widget getForm()
+  Widget getAnimations()
   {
-    return Column
-    ( 
-      children: <Widget>
-      [
-        TextField( decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'Username', hintText: 'username', prefixIcon: Icon(Icons.person),),),        
-        TextField( decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'email', hintText: 'email', prefixIcon: Icon(Icons.email),),),        
-        const Divider(height: 20, thickness: 1, indent: 10, endIndent: 10, color: Colors.indigo),        
-        ElevatedButton(onPressed: onPressed, child: const Text('Enviar')),
-      ]                                         
+    return Center(
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _isPressed = !_isPressed;
+            });
+          },
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            width: _isPressed ? 150 : 100,
+            height: _isPressed ? 60 : 50,
+            decoration: BoxDecoration(
+              color: _isPressed ? Colors.green : Colors.blueAccent,
+              borderRadius: BorderRadius.circular(_isPressed ? 15 : 8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: _isPressed ? 10 : 5,
+                  offset: Offset(_isPressed ? 5 : 2, _isPressed ? 5 : 2),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              _isPressed ? 'Enviado' : 'Enviar',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          ),
+        ),      
     );
   }
 

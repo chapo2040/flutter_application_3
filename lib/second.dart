@@ -13,7 +13,7 @@ class SecondState extends State<Second>
   Future<void> onPressed() async 
   {
     debugPrint("onPressed: Prueba Pasada !");    
-    // Navigator.pop(context);
+    Navigator.pop(context);
   } 
 
   @override
@@ -22,7 +22,7 @@ class SecondState extends State<Second>
     return MaterialApp(
       home: Scaffold
       (
-        appBar: AppBar(title: Text("data"),),
+        appBar: AppBar(title: Text("Second Page"),),
         body: Column
         (
           children: <Widget>
