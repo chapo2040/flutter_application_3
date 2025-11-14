@@ -18,8 +18,8 @@ class HomeState extends State<Home>
 
   List<user> items = 
   [
-    user(id: 1, name: 'Luis', email: "luis@gmail"),
-    user(id: 2, name: 'Maria', email: "maria@gmail"),
+    user(id: 1, name: 'Luis', email: "luis34@gmail"),
+    user(id: 2, name: 'Maria', email: "maria34@gmail"),
     user(id: 3, name: 'Jose', email: "jose@gmail"),
     user(id: 4, name: 'Ruben', email: "ruben@gmail"),
   ];
