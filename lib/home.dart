@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_3/user.dart';
-import 'package:flutter_application_3/user_api.dart';
+//import 'package:flutter_application_3/user_api.dart';
+import 'package:flutter_application_3/user_firabase.dart';
 
 class Home extends StatefulWidget 
 {
@@ -12,7 +14,14 @@ class Home extends StatefulWidget
 
 class HomeState extends State<Home> 
 {
+  final _formKey = GlobalKey<FormState>();
+  final txtID = TextEditingController();
+  final txtName = TextEditingController();
+  final txtEmail = TextEditingController();
+
   late List<user> users = [];
+  late Stream<QuerySnapshot> snapshots;
+
   bool isLoaded = false;
   bool _isPressed = false;
   int _counter = 0;
@@ -32,14 +41,15 @@ class HomeState extends State<Home>
     _incrementCounter();
     _incrementCounter();
     _incrementCounter();
-    cargaDatos();
+    //cargaDatos();
     debugPrint("MyWidget initState called: $_counter");
   }
 
   void cargaDatos() async 
   {  
     debugPrint("cargaDatos...");
-    users = await fetchUsers();
+    //users = await fetchUsers();
+    snapshots = await getUsersFireBase();    
     setState(() {  isLoaded = true;  });
   }   
 
@@ -48,6 +58,9 @@ class HomeState extends State<Home>
   {    
     debugPrint("MyWidget dispose called: $_counter");
     _incrementCounter();
+    txtID.dispose();
+    txtName.dispose();
+    txtEmail.dispose();
     super.dispose(); 
   }
 
@@ -77,11 +90,47 @@ class HomeState extends State<Home>
     items[index].isChecked = status!;
   }    
 
-  Future<void> addElement() async 
+  Future<void> btnAddUser() async 
   {
-    debugPrint("addElement");    
-
+    debugPrint("btnAddUser");    
+    await addUserFireBase(txtID.text, txtName.text, txtEmail.text);    
   }  
+
+  Future<void> btnUpdateUser() async 
+  {
+    debugPrint("btnUpdateUser");    
+    await updateUserFireBase(txtID.text, txtName.text, txtEmail.text); 
+  }  
+
+  Future<void> btnDeleteUser() async 
+  {
+    debugPrint("btnDeleteUser");    
+    await deleteUserFireBase(txtID.text);
+  }  
+
+  Future<void> btnGettUser() async 
+  {
+    debugPrint("btnGettUsers");
+    
+    DocumentSnapshot? doc = await getUserFireBase(txtID.text);     
+    if(doc?.exists == true)
+    {
+      Map<String, dynamic> data = doc?.data() as Map<String, dynamic>;      
+      txtName.text = data['name'];
+      txtEmail.text = data['email'];
+    }
+    else
+    {
+      txtName.text = "";
+      txtEmail.text = "";
+    }
+  }
+
+  Future<void> btnGettUsers() async 
+  {
+    debugPrint("btnGettUsers");
+    await printUsersFireBase(); 
+  }
 
   @override
   Widget build(BuildContext context) 
@@ -108,16 +157,17 @@ class HomeState extends State<Home>
             
             //getUsers(),             // * rest api user from internet  
             //getAnimations(),        // * animations  
-            getForm(),                // - conect to firebase: add, update & delete user
+            getForm(),                // * conect to firebase: add, update & delete user
                                       // * add user to list and refresh GUI            
                                       // * add test.dart scene for test menu for: UNITS TEST                                      
                                       // * upload proyect to GIT
-                                     
+                                      
+      
       floatingActionButton: FloatingActionButton(
-        onPressed: addElement,
+        onPressed: btnGettUsers,
         backgroundColor: Colors.indigo,        
         child: const Icon(Icons.add, color: Colors.white),
-      ),
+      ),      
 
       bottomNavigationBar: barMenu(context) 
     );     
@@ -125,20 +175,76 @@ class HomeState extends State<Home>
   
   Widget getForm()
   {
-    return Column
-    ( 
-      children: <Widget>
-      [
-        TextField( decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'Username', hintText: 'username', prefixIcon: Icon(Icons.person),),),        
-        TextField( decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'email', hintText: 'email', prefixIcon: Icon(Icons.email),),),        
-        const Divider(height: 20, thickness: 1, indent: 10, endIndent: 10, color: Colors.indigo),        
-        ElevatedButton(onPressed: addElement, child: const Text('Enviar')),
-      ]                                         
+    return Form
+    (
+      key: _formKey,
+      child: Column
+      ( 
+        children: <Widget>
+        [
+          TextField(controller: txtID, decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'id', hintText: 'id', prefixIcon: Icon(Icons.perm_identity),),),
+          TextField(controller: txtName, decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'Username', hintText: 'username', prefixIcon: Icon(Icons.person),),),
+          TextField(controller: txtEmail, decoration: InputDecoration( border: OutlineInputBorder(), labelText: 'email', hintText: 'email', prefixIcon: Icon(Icons.email),),), 
+          const Divider(height: 20, thickness: 1, indent: 10, endIndent: 10, color: Colors.indigo),        
+          Row(children: 
+          [
+            ElevatedButton(onPressed: btnAddUser, child: const Text('Add')),
+            ElevatedButton(onPressed: btnUpdateUser, child: const Text('Update')),
+            ElevatedButton(onPressed: btnDeleteUser, child: const Text('Delete')),
+            ElevatedButton(onPressed: btnGettUser, child: const Text('Find')),
+          ]),
+        ]          
+      )                               
     );
   }  
 
   Widget getUsers()
-  {
+  {    
+    return isLoaded ? StreamBuilder<QuerySnapshot>
+    (    
+      stream: snapshots,
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) 
+      {
+        if (snapshot.hasError) 
+        {
+          return Text('Something went wrong');
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) 
+        {
+          return Center(child: CircularProgressIndicator());
+        }
+        
+        if (snapshot.hasData) 
+        {
+          return ListView.builder
+          (
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) 
+            {
+              DocumentSnapshot document = snapshot.data!.docs[index];
+              Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+              return Card
+              (
+                margin: EdgeInsets.all(8.0),
+                child: ListTile
+                (
+                  title: Text(data['name'] ?? 'No Name'), 
+                  subtitle: Text(data['email'] ?? 'No Description'),                  
+                ),
+              );
+            },
+          );
+        }
+        
+        return Center(child: Text('No data found.'));
+      },
+    )
+     : const Center(child: CircularProgressIndicator()); 
+  
+
+    /*
     return isLoaded ? ListView.builder
     (
       itemCount: users.length,
@@ -153,6 +259,8 @@ class HomeState extends State<Home>
       },    
     )
     : const Center(child: CircularProgressIndicator());
+
+    */
   }
 
   Widget getAnimations()
